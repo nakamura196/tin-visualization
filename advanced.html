@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TIN Visualization</title>
+    <style>
+      svg {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="1200" height="800"></svg>
+    <script type="module">
+      import { Delaunay } from "https://cdn.skypack.dev/d3-delaunay";
+
+      const points = [
+        [35847.5, 4621],
+        [33871, 4935],
+        [33613.5, 5055],
+        [33657, 4886.5],
+        [33507.5, 4851.5],
+        [33351, 4833.5],
+        [33206.5, 4858.5],
+        [33323.5, 5002],
+        [32869.5, 3039],
+        [33208.5, 3369],
+        [33318, 3325.5],
+        [33281, 3513],
+        [33087, 3694],
+        [32909.5, 3614],
+        [32479, 3528.5],
+        [32550, 3229.5],
+        [32484.5, 3098.5],
+        [31942.5, 2978],
+        [31776.5, 2991.5],
+        [31436, 2918],
+        [31234.5, 2616],
+        [30773.5, 2373],
+        [30868, 2642],
+        [30634.5, 3039.5],
+        [30309.5, 3194],
+        [30371.5, 2817],
+        [30196, 2433.5],
+        [30029, 2252],
+        [30054, 2463.5],
+        [29669.5, 2800],
+        [29563, 2903.5],
+        [29647.5, 3200.5],
+        [29566, 3361.5],
+        [29664.5, 3511.5],
+        [29130.5, 3363.5],
+        [28767, 3033],
+        [29500.5, 3597.5],
+        [29641, 3829],
+        [29684.5, 3662.5],
+        [30132, 3672.5],
+        [30147.5, 3492.5],
+        [30289, 3475],
+        [30652, 3630],
+        [30817, 3627],
+        [31496.5, 3502],
+        [31735.5, 3544.5],
+        [32081.5, 3449],
+        [26857.5, 3511],
+        [26965.5, 3185],
+        [26782, 2696],
+        [26925.5, 2384.5],
+      ];
+
+      // スケールファクターの調整（100で割る）
+      const scaleFactor = 10;
+
+      points.forEach((point) => {
+        point[0] -= 25000;
+        point[1];
+      });
+
+      points.forEach((point) => {
+        point[0] /= scaleFactor;
+        point[1] /= scaleFactor;
+      });
+
+      const delaunay = Delaunay.from(points);
+      const triangles = delaunay.triangles;
+
+      const svg = document.querySelector("svg");
+
+      // Draw the points
+      points.forEach(([x, y]) => {
+        svg.innerHTML += `<circle cx="${x}" cy="${y}" r="2" fill="red"></circle>`;
+      });
+
+      // Draw the triangles
+      for (let i = 0; i < triangles.length; i += 3) {
+        const p0 = points[triangles[i]];
+        const p1 = points[triangles[i + 1]];
+        const p2 = points[triangles[i + 2]];
+
+        svg.innerHTML += `
+          <line x1="${p0[0]}" y1="${p0[1]}" x2="${p1[0]}" y2="${p1[1]}" stroke="black" />
+          <line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="black" />
+          <line x1="${p2[0]}" y1="${p2[1]}" x2="${p0[0]}" y2="${p0[1]}" stroke="black" />
+        `;
+      }
+
+      // バリセントリック座標を使用して点が三角形内にあるかをチェックする関数
+      function isPointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+        const v0 = [cx - ax, cy - ay];
+        const v1 = [bx - ax, by - ay];
+        const v2 = [px - ax, py - ay];
+
+        const dot00 = v0[0] * v0[0] + v0[1] * v0[1];
+        const dot01 = v0[0] * v1[0] + v0[1] * v1[1];
+        const dot02 = v0[0] * v2[0] + v0[1] * v2[1];
+        const dot11 = v1[0] * v1[0] + v1[1] * v1[1];
+        const dot12 = v1[0] * v2[0] + v1[1] * v2[1];
+
+        const invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+        const u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+        const v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+        return u >= 0 && v >= 0 && u + v < 1;
+      }
+
+      // 指定した座標（範囲内の値を使用）
+      const targetPoint = [3300 - 2500, 485];
+      svg.innerHTML += `<circle cx="${targetPoint[0]}" cy="${targetPoint[1]}" r="4" fill="green"></circle>`;
+
+      // 指定した座標が含まれる三角形を強調表示
+      const triangleIndex = delaunay.find(targetPoint[0], targetPoint[1]);
+
+      const closestPointIndex = delaunay.find(targetPoint[0], targetPoint[1]);
+      const neighbors = [...delaunay.neighbors(closestPointIndex)];
+
+      for (let i = 0; i < neighbors.length; i++) {
+        const ni = neighbors[i];
+        const nj = neighbors[(i + 1) % neighbors.length];
+
+        const p0 = points[closestPointIndex];
+        const p1 = points[ni];
+        const p2 = points[nj];
+
+        if (
+          isPointInTriangle(
+            targetPoint[0],
+            targetPoint[1],
+            p0[0],
+            p0[1],
+            p1[0],
+            p1[1],
+            p2[0],
+            p2[1]
+          )
+        ) {
+          svg.innerHTML += `
+            <line x1="${p0[0]}" y1="${p0[1]}" x2="${p1[0]}" y2="${p1[1]}" stroke="blue" stroke-width="2" />
+            <line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="blue" stroke-width="2" />
+            <line x1="${p2[0]}" y1="${p2[1]}" x2="${p0[0]}" y2="${p0[1]}" stroke="blue" stroke-width="2" />
+          `;
+          break;
+        }
+      }
+    </script>
+  </body>
+</html>

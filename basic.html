@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TIN Visualization</title>
+    <style>
+      svg {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="800" height="600"></svg>
+    <script type="module">
+      import { Delaunay } from "https://cdn.skypack.dev/d3-delaunay";
+
+      const points = [
+        [200, 300],
+        [400, 200],
+        [300, 400],
+        [600, 300],
+        [500, 500],
+      ];
+
+      const delaunay = Delaunay.from(points);
+      const triangles = delaunay.triangles;
+
+      const svg = document.querySelector("svg");
+
+      // Draw the points
+      points.forEach(([x, y]) => {
+        svg.innerHTML += `<circle cx="${x}" cy="${y}" r="4" fill="red"></circle>`;
+      });
+
+      // Draw the triangles
+      for (let i = 0; i < triangles.length; i += 3) {
+        const p0 = points[triangles[i]];
+        const p1 = points[triangles[i + 1]];
+        const p2 = points[triangles[i + 2]];
+
+        svg.innerHTML += `
+                <line x1="${p0[0]}" y1="${p0[1]}" x2="${p1[0]}" y2="${p1[1]}" stroke="black" />
+                <line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="black" />
+                <line x1="${p2[0]}" y1="${p2[1]}" x2="${p0[0]}" y2="${p0[1]}" stroke="black" />
+            `;
+      }
+    </script>
+  </body>
+</html>
